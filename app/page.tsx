@@ -1,103 +1,77 @@
-import Image from "next/image";
+// Frontend with auto-paste and loader
+
+"use client";
+
+import { useState, useEffect } from "react";
+import ProductResult from "../components/ProductResult";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [url, setUrl] = useState("");
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+  useEffect(() => {
+    const handlePaste = (event: ClipboardEvent) => {
+      const pastedText = event.clipboardData?.getData("text");
+      if (pastedText?.includes("aliexpress.com/item")) {
+        setUrl(pastedText);
+        fetchProduct(pastedText);
+      }
+    };
+    window.addEventListener("paste", handlePaste as any);
+    return () => window.removeEventListener("paste", handlePaste as any);
+  }, []);
+
+  async function fetchProduct(link: string) {
+    if (!link) return;
+
+    console.log("Sending to scrape:", link);
+
+    setLoading(true);
+    setError("");
+    setData(null);
+    try {
+      const res = await fetch("/api/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: "https://ar.aliexpress.com/item/1005005470146493.html?srcSns=sns_Copy&spreadType=socialShare&bizType=ProductDetail&social_params=6000292636686&aff_fcid=dd074b9adf6441b9ab422a0499855224-1748191250509-07756-_okRd1cA&tt=MG&aff_fsk=_okRd1cA&aff_platform=default&sk=_okRd1cA&aff_trace_key=dd074b9adf6441b9ab422a0499855224-1748191250509-07756-_okRd1cA&shareId=6000292636686&businessType=ProductDetail&platform=AE&terminal_id=8d244faef3354db89cb91b073abc5b45&afSmartRedirect=y" }),
+      });
+      const result = await res.json();
+      if (res.ok) setData(result);
+      else throw new Error(result.message || "حدث خطأ أثناء جلب البيانات");
+    } catch (err: any) {
+      setError(err.message);
+      console.log("Error here")
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <main className="p-8 max-w-3xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">AliExpress Product Extractor</h1>
+      <p className="text-sm mb-4">Paste or enter a product URL to extract product details in Arabic</p>
+
+      <div className="mb-4 flex gap-2">
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="Enter AliExpress product URL"
+          className="w-full border border-gray-300 p-2 rounded"
+        />
+        <button
+          onClick={() => fetchProduct(url)}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          Fetch
+        </button>
+      </div>
+
+      {loading && <p className="text-blue-500">جاري التحميل...</p>}
+      {error && <p className="text-red-500">{error}</p>}
+      {data && <ProductResult data={data} />}
+    </main>
   );
 }

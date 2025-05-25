@@ -1,3 +1,5 @@
+// Arabic output + image download
+
 import Image from "next/image";
 
 export default function ProductResult({ data }: { data: any }) {
